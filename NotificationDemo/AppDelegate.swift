@@ -53,11 +53,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         // Logout a user that might be logge in already
         SyncUser.current?.logOut()
-
-
+        
+        
         // Create users for first run
         if !user1created || !user2created {
-            print("Register user 2")
+            // Register user 2
             RealmManager.authenticate(with: user2, register: true) { error in
                 guard error == nil else { print(error!)
                     print("Users are probably already created. Unfortunatelly, this cannot be determined in advance with the current version of Realm. Please re-compile and run again")
@@ -65,21 +65,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                     return
                 }
                 
-                print("user 2 is registered")
-                self.user2created = true
+                self.user2created = true // set user 2 to registered in UserDefaults
                 
                 let user2Identity = SyncUser.current!.identity
                 
                 //
                 // Login user 1 and provide permission to user 2
                 //
-                print("Register user 1")
+                
+                // Register user 1
                 SyncUser.current!.logOut()
                 RealmManager.authenticate(with: user1, register: true) { error in
                     guard error == nil else { print(error!); return }
                     
-                    print("User 1 is registered")
-                    self.user1created = true
+                    self.user1created = true // set user 1 to registered in UserDefaults
                     
                     // Provide user2 permission to Realm of user1
                     RealmManager.changePermission(for: SyncUser.current!, anotherUserID: user2Identity!)
@@ -95,16 +94,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                         
                         let realm = try! Realm()
                         let users = realm.objects(User.self)
-
+                        
                         // Waint until AppUser object of user2 is available in order to store the shared Realm path
                         self.appUserNotificationToken = users.addNotificationBlock { [unowned self] (changes: RealmCollectionChange) in
                             
+                            // Assure that owed Realm is completely synced
                             guard let appUser = users.first else { print("AppUser info not yet available. Wait until data is available"); return }
-
+                            
                             if let syncUser = SyncUser.current {
                                 // These actions should be performed only once
-
-                                print("Add shared Realm path to AppUser object of user 2.")
+                                
+                                print("Add identiy of user 1 to AppUser object in Realm of user 2 (i.e. to get track of the shared Realm owned by user 1")
                                 
                                 try! Realm().write {
                                     appUser.sharedServerPath = user1Identity
@@ -127,6 +127,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     
     
     func initializeLandingViewController() {
+        print("------------------------------------------------------------------\n")
         self.window?.rootViewController = UINavigationController(rootViewController: ViewController())
         self.window?.makeKeyAndVisible()
     }

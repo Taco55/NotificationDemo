@@ -30,7 +30,7 @@ public struct Credentials {
 
 public class RealmManager: NSObject  {
     
-
+    
     //API
     public static var host: String!
     public static var appPath: String!
@@ -47,7 +47,7 @@ public class RealmManager: NSObject  {
     }
     
     static var realm: Realm { return try! Realm() }
-
+    
     fileprivate static var sharedServerPath: String? {
         if let user = realm.objects(User.self).first  {
             return user.sharedServerPath
@@ -65,7 +65,7 @@ public class RealmManager: NSObject  {
         self.appPath = appPath
         SyncManager.shared.logLevel = logging
     }
-
+    
     
     /////////////////////////////////////////////////////////////////
     // Mark: - Realm and realm configuration
@@ -76,12 +76,12 @@ public class RealmManager: NSObject  {
         let user = Realm.Configuration.defaultConfiguration.syncConfiguration!.user
         if let sharedServerPath = self.sharedServerPath {
             let url = self.syncServerURL.appendingPathComponent("\(sharedServerPath)/\(self.appPath!)")
-            return Realm.Configuration(syncConfiguration: SyncConfiguration(user: user, realmURL: url)) //, objectTypes: [FoodContainer.self, FoodContainerType.self])
+            return Realm.Configuration(syncConfiguration: SyncConfiguration(user: user, realmURL: url))
         } else {
             return nil
         }
     }
-
+    
     class func setRealm(for realmUser: SyncUser) {
         
         // Configure Realm for SyncUser
@@ -97,7 +97,7 @@ public class RealmManager: NSObject  {
         )
         Realm.Configuration.defaultConfiguration = configuration
     }
-
+    
     
     //////////////////////////////////////////////////////////////////////////////
     // MARK: - Authentication
@@ -109,7 +109,7 @@ public class RealmManager: NSObject  {
         SyncUser.logIn(with: SyncCredentials.usernamePassword(username: credentials.username, password: credentials.password, register: register), server: RealmManager.syncAuthURL) { realmUser, error in
             
             if let error = error { completionHandler(error as NSError); return }
-
+            
             DispatchQueue.main.async {
                 guard let realmUser = realmUser else { fatalError(String(describing: error)) }
                 // Set new Realm for logged in User
@@ -117,7 +117,7 @@ public class RealmManager: NSObject  {
                 
                 // Seed database for new user
                 if register {
-                    print("\nNew user \(credentials.username) registered: seed with a dog")
+                    print("New user \(credentials.username) registered: seed with a dog")
                     
                     // Create user
                     let user = User()
@@ -159,7 +159,6 @@ public class RealmManager: NSObject  {
         try! managementRealm.write { managementRealm.add(permissionChange) }
         
         self.permissionChangetoken = managementRealm.objects(SyncPermissionChange.self).filter("id = %@", permissionChange.id).addNotificationBlock { notification in
-            print(notification)
             if case .update(let changes, _, _, _) = notification, let change = changes.first {
                 
                 print("update")

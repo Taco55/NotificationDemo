@@ -199,7 +199,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         RealmManager.authenticate(with: userCredentials, register: false) { error in
             guard error == nil else { print(error!); return }
             
-            print(String(format: "%@ logged", userCredentials.username))
+            print(String(format: "%@ is logged in", userCredentials.username))
             
             // We should now wait until User object is synced (i.e. for user details and, for example, to obtain the serverPath of the shared Realm for user2.
             // Two main limitations with ROS:
@@ -227,15 +227,29 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         
         self.notificationToken?.stop()
         self.dogs = self.dataRealm.objects(Dog.self)
+        
+        ////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////
+        ///////////////////// Problem here ////////////////////////////////
+        /*
+         The issue with the fine-grained notifications occurs here.
+         When user1 is logged in and a dog is added to his owened Realm owned, the notification block below is not triggered. However, when user2 is logged in and a dog is added the same Realm (which is thus owned by user1) this notificatioin IS triggered.
+         */
+        ////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////
+        
+        
         self.notificationToken = self.dogs.addNotificationBlock { [unowned self] (changes: RealmCollectionChange) in
             
             self._dataChanged = false // Escape variable in case notification is not triggered
             switch changes {
             case .initial(let dogs):
-                print("Dog notification: initial run. Number of dogs", dogs.count)
+                print("Dog notification triggered: initial run. Number of dogs", dogs.count)
                 self.tableView.reloadData()
             case .update(_, let deletions, let insertions, _):
-                print(String(format: "Dog notification: update. Deletions: %i - Insertions: %i", deletions.count, insertions.count))
+                print(String(format: "Dog notification triggered: update. Deletions: %i - Insertions: %i", deletions.count, insertions.count))
                 
                 self.tableView.beginUpdates()
                 self.tableView.insertRows(at: insertions.map {IndexPath(row: $0, section: 0)}, with: .automatic)
@@ -280,7 +294,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
                 self.dataRealm.add(dog)
             }
             self.textField.text = nil
-            print("Dog added")
+            print("\nDog added")
             setEscapeTimer()
         }
     }
@@ -292,21 +306,21 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         print("Dog deleted")
         setEscapeTimer()
     }
-
+    
     ///////////////////////////////////////////////////////////////////////////////////////////
     // MARK: Escape mechanism
     ///////////////////////////////////////////////////////////////////////////////////////////
-
+    
     // When notifications are not deliverd, tableview will be updated after the timer has been fired
     func setEscapeTimer() {
         // Set time for escape mechanism
         _dataChanged = true
         self.timer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(ViewController.timerFired(_:)), userInfo: nil, repeats: false)
     }
-
+    
     func timerFired(_ timer: Timer) {
         if _dataChanged {
-            print("Notification not triggered. Manual update")
+            print("Escape by timer: notification is not triggered (despite a collection change). Tableview is updated anyway...\n")
             self.tableView.reloadData()
             _dataChanged = false
         }
